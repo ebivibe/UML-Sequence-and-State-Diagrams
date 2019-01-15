@@ -1,0 +1,21 @@
+contraints
+
+context Candidate
+ inv AtMostOneRecommendationLetter:
+ self.RecommendationLetter->size<=1
+
+ context Candidate
+  inv NameNotEmpty:
+  self.firstName.size()>0 and self.lastName.size()>0
+
+context Candidate
+ inv UniqueStudentNumber:
+ Candidate.allInstances()->forAll( c1, c2  | c1 <> c2 implies c1.studentNumber <> c2.studentNumber)
+
+context Posting 
+ inv ApplicantMustBeRegistered:
+ self.positionsRequested.creates->forAll(c | c.registrationStatus <> RegistrationStatus::Not_Registered)
+
+context Application
+ inv DeadlineMustNotHavePassed:
+ self.positionsRequested.forAll(p | p.endDate> self.dateSubmitted)

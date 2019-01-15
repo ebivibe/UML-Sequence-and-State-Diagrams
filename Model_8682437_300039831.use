@@ -1,0 +1,228 @@
+model TAMS
+
+enum RegistrationStatus {FullTime, PartTime, Not_Registered}
+enum AddressType {Primary, Work}
+enum JobType {TA, Corrector}
+enum RelationshipType {FormerEmployee, Student}
+enum ApplicationStatus {Created, Submitted, Accepted, Rejected}
+
+-- classes
+abstract class Person
+attributes
+    firstName : String
+    lastName : String
+    middleName : String
+    mainPhone : String
+    employeeEmail : String
+end
+
+class Publication
+attributes
+    title : String
+    datePublished : Integer
+end
+
+class Posting
+attributes
+    jobClassification : JobType
+    description : String
+    rate : Real
+    workHours : Real
+    estimatedEnrolments : Integer
+    startDate : Integer
+    endDate : Integer
+    minQualifications : String
+end
+
+class Duty
+attributes
+    description : String
+    hours : Real
+end
+
+class AdminAssistant < Person
+attributes
+end
+
+class Candidate < Person
+attributes
+    studentEmail : String
+    studentNumber: Integer
+    --note here it is assumed that proficiency is ranked out of some set of Integeregers
+    englishProficiencyWritten : Integer
+    englishProficiencySpoken : Integer
+    frenchProficiencyWritten : Integer
+    frenchProficiencySpoken : Integer
+    program : String
+    programTitle : String
+    programType : String
+    registrationStatus : RegistrationStatus
+    yearOfStudy : Integer
+    currentResearch : String
+    cv : String
+    otherRelevantWork : String
+end
+
+class Application
+attributes
+    relevantWork : String
+    dateSubmitted : Integer
+    status : ApplicationStatus
+end
+
+class Address
+attributes
+    type : AddressType
+    unit : String
+    streetNumber : Integer
+    streetName : String
+    city : String
+    province : String
+    country : String
+    postalCode : String
+end
+
+class Experience
+attributes
+    type : JobType
+    academicYear : String
+end
+
+class Education
+attributes
+    degree : String
+    institution : String
+    dateCompleted : Integer
+end
+
+class RecommendationLetter
+attributes
+    relationship : RelationshipType
+    performanceScore : Integer
+    researchSkillsScore : Integer
+    workPeriod : String
+    company : String
+    comment : String
+end
+
+class Professor < Person
+attributes
+end
+
+abstract class OrganizationalUnit
+attributes
+    name : String
+end
+
+class Department < OrganizationalUnit
+attributes
+end
+
+class Course
+attributes
+    courseCode : String
+    courseName : String
+end
+
+--associations
+
+association belongsTo between
+    Course[1]
+    Department[*]
+end
+
+association unitToUnit between
+    OrganizationalUnit[*] role childUnits
+    OrganizationalUnit[0..1] role parentUnit
+end
+
+association involves between
+    Posting[1]
+    Duty[*]
+end
+
+association creates between
+    Candidate[1]
+    Application[1..*]
+end
+
+association published between
+    Candidate[1]
+    Publication[*]
+end
+
+association has between
+    Candidate[1]
+    Experience[*]
+end
+
+association completed between
+    Candidate[1]
+    Education[*]
+end
+
+association submits between
+    Candidate[1]
+    RecommendationLetter[1]
+end
+
+association teaches between
+    Professor[1]
+    Course[*]
+end
+
+association positionsRequested between
+    Posting[1..*]
+    Application[*]
+end
+
+association hasA between
+    Course[1]
+    Posting[*]
+end
+
+association doNotConsider between
+    Application[*]
+    Course[*]
+end
+
+association address between
+    Person[1]
+    Address[1..2]
+end
+
+association posts between
+    AdminAssistant[1]
+    Posting[*]
+end
+
+association courseDetails between
+    Experience[1]
+    Course[*]
+end
+
+
+-- OCL constraints
+constraints
+context Candidate
+ inv AtMostOneRecommendationLetter:
+ self.recommendationLetter->size<=1
+
+ context Candidate
+  inv NameNotEmpty:
+  self.firstName.size()>0 and self.middleName.size()>0 and self.lastName.size()>0
+
+context Candidate
+ inv UniqueStudentNumber:
+ Candidate.allInstances()->forAll( c1, c2  | c1 <> c2 implies c1.studentNumber <> c2.studentNumber)
+
+context Posting
+ inv ApplicantMustBeRegistered:
+ self.application.candidate->forAll(c | c.registrationStatus <> RegistrationStatus::Not_Registered)
+
+context Application
+ inv DeadlineMustNotHavePassed:
+ self.posting.forAll(p | p.endDate> self.dateSubmitted)
+
+
+
